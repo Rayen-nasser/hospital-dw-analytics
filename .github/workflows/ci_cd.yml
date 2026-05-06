@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   schedule:
-    - cron: '0 2 * * 0'   # Weekly on Sunday at 02:00 UTC (3am local)
+    - cron: '0 0 * * *'   # Every night at midnight UTC
 
 jobs:
   build-and-deploy:
@@ -23,30 +23,28 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install kaggle  # Ensure kaggle is installed
-          # Additional dependencies if any
 
       - name: Run ETL pipeline
         run: |
           echo "Running download step..."
-          python scripts/etl/download_dataset.py
+          python src/etl/download_dataset.py
           echo "Running cleaning step..."
-          python scripts/etl/clean_dataset.py
+          python src/etl/clean_dataset.py
           echo "Running transform step..."
-          python scripts/etl/transform_dataset.py
+          python src/etl/transform_dataset.py
 
       - name: Retrain model
         run: |
-          python scripts/ml/train_model.py
+          python src/ml/train_model.py
 
       - name: Kill any running API process
         run: |
-          # Find and kill any running FastAPI process
-          pkill -f "uvicorn\|python.*api"
-          echo "Killed any existing API process"
+          pkill -f "uvicorn\|python.*api" || echo "No process to kill"
 
       - name: Start API (background)
         run: |
-          nohup python scripts/ml/api.py > api.log 2>&1 &
+          nohup python -m uvicorn src.ml.api:app --host 0.0.0.0 --port 8000 > api.log 2>&1 &
+          sleep 5
           echo "API started in background"
 
       - name: Verify API health

@@ -7,10 +7,21 @@ import os
 import joblib
 import pandas as pd
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Any, Dict
 
-app = FastAPI(title="Readmission Risk API")
+app = FastAPI(title="Readmission Risk API", description="API to predict 30-day hospital readmission risk. View /docs for Swagger UI.")
+
+# Mount static files for frontend
+static_dir = os.path.join(os.path.dirname(__file__), "..", "..", "frontend")
+os.makedirs(static_dir, exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+@app.get("/")
+def serve_frontend():
+    return FileResponse(os.path.join(static_dir, "index.html"))
 
 # Load model on startup – path relative to this file
 model_path = os.path.join(os.path.dirname(__file__), "..", "..", "model", "readmission_model.pkl")
