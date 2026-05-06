@@ -1,0 +1,7 @@
+pandas
+scikit-learn
+pyodbc
+python-dotenv
+kaggle
+fastapi
+uvicorn
